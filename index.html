@@ -1,8 +1,156 @@
-<html>
-<a href="app-release.apk" download="Эро чат">
-  <button type="button" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
-    Скачать файл
-  </button>
-</a>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>О чате — Общение без границ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
+        body {
+            background-color: #f5f7fb;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-bottom: 12px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .features-list li {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 12px;
+            color: #444;
+        }
+
+        .features-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #2ecc71;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .cta-container {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        /* Стилизация вашей кнопки скачивания */
+        .download-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
+        }
+
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .download-btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-link {
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Добро пожаловать в наш Чат!</h1>
+        <p class="subtitle">Пространство для живого общения, новых знакомств и ярких эмоций.</p>
+
+        <div class="section">
+            <h2>О платформе</h2>
+            <p>Наш чат — это современная и безопасная площадка, созданная для объединения людей со всего мира. Здесь вы можете найти единомышленников, обсудить любимые темы, завести верных друзей или просто приятно провести вечер в компании интересных собеседников.</p>
+        </div>
+
+        <div class="section">
+            <h2>Главные преимущества</h2>
+            <ul class="features-list">
+                <li><strong>Анонимность и безопасность:</strong> Мы заботимся о конфиденциальности ваших данных и личных переписок.</li>
+                <li><strong>Мгновенные сообщения:</strong> Никаких задержек — общайтесь в режиме реального времени.</li>
+                <li><strong>Удобный интерфейс:</strong> Интуитивно понятный дизайн, который отлично работает на любых устройствах.</li>
+                <li><strong>Тематические комнаты:</strong> Выбирайте разделы по интересам или создавайте свои приватные комнаты.</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Правила сообщества</h2>
+            <p>Мы поддерживаем атмосферу взаимного уважения. В нашем чате запрещены любые проявления агрессии, спам, флуд и оскорбления участников. Модераторы следят за порядком 24/7, чтобы ваше пребывание здесь было максимально комфортным.</p>
+        </div>
+
+        <!-- Контейнер с вашей кнопкой скачивания -->
+        <div class="cta-container">
+            <p style="margin-bottom: 20px; font-weight: bold; color: #2c3e50;">Хотите общаться со смартфона? Скачайте наше приложение!</p>
+            <a href="app-release.apk" download="Ero_Chat.apk" class="btn-link">
+                <button type="button" class="download-btn">
+                    Скачать приложение чата
+                </button>
+            </a>
+        </div>
+    </div>
+
+</body>
 </html>
