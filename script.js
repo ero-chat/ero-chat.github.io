@@ -1,12 +1,10 @@
-const MAX_PAGE = BigInt(
-  "115792089237316195423570985008687907852837564279074904382605163141518161494337"
-);
 let currentPage = 1n; 
 let isCompressed = true; 
 
-const P = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F"); 
-const Gx = BigInt("0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798"); 
-const Gy = BigInt("0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8"); 
+const MAX_PAGE = BigInt("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140");
+const P = BigInt("0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"); 
+const Gx = BigInt("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"); 
+const Gy = BigInt("0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"); 
 
 
 
@@ -71,7 +69,7 @@ function getPublicKeyBytes(privKeyBigInt, compressed) {
     if (bits % 2n === 1n) [xr, yr] = pointAdd(xr, yr, baseX, baseY); 
     [baseX, baseY] = pointAdd(baseX, baseY, baseX, baseY); 
     bits /= 2n; 
-  } 
+  } // координаты 64 
   let xHex = xr.toString(16).padStart(64, '0'); 
   let pubKeyBytes = []; 
   if (compressed) { 
@@ -436,8 +434,9 @@ function renderPage() {
   if (!tbody) return; 
   tbody.innerHTML = ''; 
   
-  for (let i = 0n; i < 10n; i++) { 
-    const calculatedIndex = (currentPage - 1n) * 10n + i + 1n; 
+  // количество ключей  
+  for (let i = 0n; i < 1n; i++) { 
+    const calculatedIndex = (currentPage - 1n) * 1n + i + 1n; 
     const privKeyHex = calculatedIndex.toString(16).padStart(64, '0'); 
     let realAddress = "";
     
@@ -447,24 +446,39 @@ function renderPage() {
       realAddress = "Ошибка расчета (" + err.message + ")";
     }
     
-// 1. Генерация данных
-const wifCompressed = hexToWifCompressed(privKeyHex);
-const compAddr = generateBitcoinAddress(privKeyHex, true);
-const uncompAddr = generateBitcoinAddress(privKeyHex, false);
+    // 1. Генерация данных
+    const wifCompressed = hexToWifCompressed(privKeyHex);
+    const compAddr = generateBitcoinAddress(privKeyHex, true);
+    const uncompAddr = generateBitcoinAddress(privKeyHex, false);
 
-// 2. Отрисовка строки таблицы в новом порядке
-const row = document.createElement('tr'); 
-row.innerHTML = `<td>${Number(i) + 1}</td>` +
-  `<td class="hex-key">${privKeyHex}</td>` +
-  `<td><strong>${compAddr}</strong></td>` + // 1-й адрес
-  `<td><strong>${uncompAddr}</strong></td>` + // 2-й адрес
-  `<td><span style="color: #e67e22; font-family: monospace;">${wifCompressed}</span></td>`; // WIF в конце
-tbody.appendChild(row);
+    const privBigInt = BigInt("0x" + privKeyHex);
+    
+    // Получаем байты СЖАТОГО публичного ключа
+    const pubKeyBytesComp = getPublicKeyBytes(privBigInt, true); 
+    const compPubKeyHex = Array.from(pubKeyBytesComp)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
 
+    // Получаем байты НЕСЖАТОГО публичного ключа (передаем false)
+    const pubKeyBytesUncomp = getPublicKeyBytes(privBigInt, false); 
+    const uncompPubKeyHex = Array.from(pubKeyBytesUncomp)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
 
- 
+    // 2. Отрисовка строки таблицы с обоими ключами
+    const row = document.createElement('tr'); 
+    row.innerHTML = `<td>${Number(i) + 1}</td>` +
+      `<td class="hex-key" style="white-space: nowrap; font-size: 0.85em; font-family: monospace;">${compPubKeyHex}</td>` + 
+      `<td class="hex-key" style="white-space: nowrap; font-size: 0.85em; font-family: monospace;">${uncompPubKeyHex}</td>` + 
+      `<td><strong>${compAddr}</strong></td>` + 
+      `<td><strong>${uncompAddr}</strong></td>` + 
+      `<td><span style="color: #e67e22; font-family: monospace;">${wifCompressed}</span></td>`; 
+
+    tbody.appendChild(row);
   } 
-} 
+}
+
+
 
 function changePage(direction) { 
   currentPage += BigInt(direction); 
@@ -498,3 +512,22 @@ renderPage();
 }
 renderPage();
 });
+
+// Функция перехода на самую первую страницу
+function goToFirstPage() {
+  currentPage = 1n;
+  renderPage();
+}
+
+// Функция перехода на самую последнюю страницу
+function goToLastPage() {
+  // Проверяем, существует ли MAX_PAGE в вашем коде, и присваиваем её
+  if (typeof MAX_PAGE !== 'undefined') {
+    currentPage = MAX_PAGE;
+  } else {
+    // Безопасный фолбек с вашим шестнадцатеричным значением
+    currentPage = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+  }
+  renderPage();
+}
+

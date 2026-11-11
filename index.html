@@ -17,6 +17,8 @@
             </div>
             
             <div class="buttons">
+                <button onclick="goToFirstPage()" title="В самое начало">⏮ В начало</button>
+                <button onclick="goToLastPage()" title="В самый конец">В конец ⏭</button>
                 <button onclick="changePage(-1)">◀ Назад</button>
                 <button onclick="changePage(1)">Вперед ▶</button>
                 <button onclick="goRandomPage()" class="btn-random">🎲 Случайная</button>
@@ -25,17 +27,16 @@
 
         <div class="table-wrapper">
             <table>
-<thead>
-    <tr>
-        <th style="width: 5%;">#</th>
-        <th style="width: 35%;">Приватный Ключ (Hex)</th>
-        <th style="width: 20%;">Сжатый Адрес</th>
-        <th style="width: 20%;">Несжатый Адрес</th>
-        <th style="width: 20%;">WIF Compressed</th> <!-- Столбец перенесен в конец -->
-    </tr>
-</thead>
-
-
+                <thead>
+                    <tr>
+                        <th style="width: 4%;">#</th>
+                        <th style="width: 26%;">Сжатый Публичный Ключ (Hex)</th>
+                        <th style="width: 26%;">Несжатый Публичный Ключ (Hex)</th>
+                        <th style="width: 15%;">Сжатый Адрес</th>
+                        <th style="width: 15%;">Несжатый Адрес</th>
+                        <th style="width: 14%;">WIF Compressed</th>
+                    </tr>
+                </thead>
                 <tbody id="keys-table-body">
                     <!-- Строки генерируются через JS -->
                 </tbody>
