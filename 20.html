@@ -30,6 +30,58 @@
   .extra .k { font-size: 12px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; min-width: 110px; }
   .extra .v { font-family: monospace; font-size: 13px; font-weight: 500; color: #0f172a; word-break: break-all; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; flex: 1 1 400px; }
   .extra .v.empty { color: #94a3b8; font-weight: 400; }
+
+  /* Компактный горизонтальный блок балансов */
+  .balance-strip {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .balance-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    background: #f8fafc;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.2;
+    flex: 0 0 auto;
+    max-width: 100%;
+  }
+  .balance-chip .lbl {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+  .balance-chip .val {
+    color: #94a3b8;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .balance-chip.positive {
+    background: #16a34a;
+    border: 2px solid #15803d;
+    box-shadow: 0 0 0 4px rgba(34,197,94,0.35), 0 4px 12px rgba(22,163,74,0.45);
+  }
+  .balance-chip.positive .lbl {
+    color: #dcfce7;
+  }
+  .balance-chip.positive .val {
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 13px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  }
+
+  .addr-section-title { font-size: 12px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin: 18px 0 6px; }
+
   .status { margin-top: 8px; font-size: 12px; color: #64748b; font-family: monospace; }
   .status.error { color: #b91c1c; }
   .note { margin-top: 10px; font-size: 12px; color: #64748b; }
@@ -56,15 +108,48 @@
     <input type="text" id="privkey-input" placeholder="Приватный ключ P (hex, опционально — для WIF при + / −)" />
   </div>
 
+  <!-- Компактный горизонтальный блок балансов -->
+  <div class="balance-strip">
+    <div class="balance-chip" id="chip-p2pkh">
+      <span class="lbl">P2PKH</span>
+      <span class="val" id="balance-p2pkh">—</span>
+    </div>
+    <div class="balance-chip" id="chip-p2sh">
+      <span class="lbl">P2SH-P2WPKH</span>
+      <span class="val" id="balance-p2sh">—</span>
+    </div>
+    <div class="balance-chip" id="chip-p2wpkh">
+      <span class="lbl">P2WPKH</span>
+      <span class="val" id="balance-p2wpkh">—</span>
+    </div>
+    <div class="balance-chip" id="chip-p2tr">
+      <span class="lbl">P2TR</span>
+      <span class="val" id="balance-p2tr">—</span>
+    </div>
+  </div>
+
   <div class="result-block">
     <div class="result-label" id="result-label">Результат:</div>
     <div id="result" class="result">—</div>
   </div>
 
+  <div class="addr-section-title">Адреса и ключи</div>
   <div class="extra">
     <div class="row">
-      <div class="k">Address</div>
+      <div class="k">P2PKH</div>
       <div class="v empty" id="address-out">—</div>
+    </div>
+    <div class="row">
+      <div class="k">P2SH-P2WPKH</div>
+      <div class="v empty" id="addr-p2sh">—</div>
+    </div>
+    <div class="row">
+      <div class="k">P2WPKH</div>
+      <div class="v empty" id="addr-p2wpkh">—</div>
+    </div>
+    <div class="row">
+      <div class="k">P2TR</div>
+      <div class="v empty" id="addr-p2tr">—</div>
     </div>
     <div class="row">
       <div class="k">WIF</div>
@@ -73,7 +158,7 @@
   </div>
 
   <div id="status" class="status"></div>
-  <div class="note">WIF для операций «+ / −» требует приватный ключ P. Для «× / ÷» WIF вычисляется из k без него.</div>
+  <div class="note">WIF для операций «+ / −» требует приватный ключ P. Для «× / ÷» WIF вычисляется из k без него. Баланс запрашивается для P2PKH, P2SH-P2WPKH, P2WPKH и P2TR.</div>
 </div>
 
 <script>
@@ -274,7 +359,6 @@
     withPad.set(bytes);
     withPad[l] = 0x80;
     var bitLen = l * 8;
-    // RIPEMD-160: длина сообщения в битах, little-endian, 64 бита
     withPad[withPad.length - 8] = bitLen & 0xff;
     withPad[withPad.length - 7] = (bitLen >>> 8) & 0xff;
     withPad[withPad.length - 6] = (bitLen >>> 16) & 0xff;
@@ -328,6 +412,12 @@
     return out;
   }
 
+  function concatBytes(a, b) {
+    var out = new Uint8Array(a.length + b.length);
+    out.set(a); out.set(b, a.length);
+    return out;
+  }
+
   /* ---------- Base58Check ---------- */
   var B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
   function base58encode(bytes) {
@@ -355,13 +445,116 @@
     return base58encode(buf);
   }
 
-  /* ---------- Address / WIF ---------- */
-  function pubkeyToAddress(pubBytes) {
+  /* ---------- Bech32 / Bech32m (BIP-173 / BIP-350) ---------- */
+  var BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+  var BECH32_CONST = 1;
+  var BECH32M_CONST = 0x2bc830a3;
+
+  function bech32Polymod(values) {
+    var gen = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+    var chk = 1;
+    for (var i = 0; i < values.length; i++) {
+      var top = chk >>> 25;
+      chk = (((chk & 0x1ffffff) << 5) ^ values[i]) >>> 0;
+      for (var j = 0; j < 5; j++) {
+        if ((top >>> j) & 1) chk = (chk ^ gen[j]) >>> 0;
+      }
+    }
+    return chk;
+  }
+
+  function bech32HrpExpand(hrp) {
+    var codes = [];
+    for (var i = 0; i < hrp.length; i++) codes.push(hrp.charCodeAt(i));
+    var out = [];
+    for (var i = 0; i < codes.length; i++) out.push(codes[i] >> 5);
+    out.push(0);
+    for (var i = 0; i < codes.length; i++) out.push(codes[i] & 31);
+    return out;
+  }
+
+  function bech32Encode(hrp, data, constant) {
+    var values = bech32HrpExpand(hrp).concat(data);
+    var mod = (bech32Polymod(values.concat([0,0,0,0,0,0])) ^ constant) >>> 0;
+    var checksum = [];
+    for (var i = 0; i < 6; i++) checksum.push((mod >>> (5 * (5 - i))) & 31);
+    var combined = data.concat(checksum);
+    var out = hrp + "1";
+    for (var i = 0; i < combined.length; i++) out += BECH32_CHARSET[combined[i]];
+    return out;
+  }
+
+  function convertBits(data, fromBits, toBits, pad) {
+    var acc = 0, bits = 0;
+    var ret = [];
+    var maxv = (1 << toBits) - 1;
+    for (var i = 0; i < data.length; i++) {
+      acc = (acc << fromBits) | data[i];
+      bits += fromBits;
+      while (bits >= toBits) {
+        bits -= toBits;
+        ret.push((acc >> bits) & maxv);
+      }
+    }
+    if (pad && bits > 0) ret.push((acc << (toBits - bits)) & maxv);
+    return ret;
+  }
+
+  function segwitAddress(hrp, version, program) {
+    var data = [version].concat(convertBits(Array.from(program), 8, 5, true));
+    var constant = (version === 0) ? BECH32_CONST : BECH32M_CONST;
+    return bech32Encode(hrp, data, constant);
+  }
+
+  /* ---------- Address generation ---------- */
+  function pubkeyToP2PKH(pubBytes) {
     var h = hash160(pubBytes);
     var payload = new Uint8Array(21);
     payload[0] = 0x00;
     payload.set(h, 1);
     return base58check(payload);
+  }
+
+  function pubkeyToP2SHP2WPKH(pubBytes) {
+    var pubHash = hash160(pubBytes);
+    var redeemScript = new Uint8Array(22);
+    redeemScript[0] = 0x00;
+    redeemScript[1] = 0x14;
+    redeemScript.set(pubHash, 2);
+    var scriptHash = hash160(redeemScript);
+    var payload = new Uint8Array(21);
+    payload[0] = 0x05;
+    payload.set(scriptHash, 1);
+    return base58check(payload);
+  }
+
+  function pubkeyToP2WPKH(pubBytes) {
+    var pubHash = hash160(pubBytes);
+    return segwitAddress("bc", 0, pubHash);
+  }
+
+  function taggedHash(tag, data) {
+    var tagHash = sha256(new TextEncoder().encode(tag));
+    return sha256(concatBytes(concatBytes(tagHash, tagHash), data));
+  }
+
+  function pubkeyToP2TR(pubBytes) {
+    var xOnly = pubBytes.slice(1, 33);
+    var pubPoint = decodePubKey(bytesToHex(pubBytes));
+    var internalKey;
+    if (pubPoint[1] % 2n === 0n) {
+      internalKey = xOnly;
+    } else {
+      var negPoint = pointNeg(pubPoint);
+      internalKey = hexToBytes(negPoint[0].toString(16).padStart(64, "0"));
+    }
+    var tweakHash = taggedHash("TapTweak", internalKey);
+    var tweak = BigInt("0x" + bytesToHex(tweakHash));
+    var internalPoint = decodePubKey("02" + bytesToHex(internalKey));
+    var tweakPoint = pointMul(G, tweak);
+    var outputPoint = pointAdd(internalPoint, tweakPoint);
+    var outputX = hexToBytes(outputPoint[0].toString(16).padStart(64, "0"));
+    return segwitAddress("bc", 1, outputX);
   }
 
   function privToWif(d, compressed) {
@@ -374,20 +567,40 @@
     return base58check(payload);
   }
 
+  /* ---------- Balance check (Blockchain.com API) ---------- */
+  async function checkBalance(address) {
+    if (!address) return null;
+    var url = "https://blockchain.info/balance?active=" + encodeURIComponent(address) + "&cors=true";
+    try {
+      var response = await fetch(url);
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      var data = await response.json();
+      var info = data[address];
+      if (!info) return 0;
+      return info.final_balance / 100000000;
+    } catch (e) {
+      console.warn("Не удалось получить баланс для " + address + ":", e.message);
+      return null;
+    }
+  }
+
   /* ---------- self-test ---------- */
   (function selfTest() {
     try {
       var gCompressed = hexToBytes("0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
-      var addr = pubkeyToAddress(gCompressed);
-      var ok1 = addr === "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH";
+      var addrP2PKH = pubkeyToP2PKH(gCompressed);
+      var ok1 = addrP2PKH === "1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH";
       var wif = privToWif(1n, true);
       var ok2 = wif === "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn";
       var shaTest = bytesToHex(sha256(hexToBytes("")));
       var ok3 = shaTest === "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
       var ripTest = bytesToHex(ripemd160(hexToBytes("")));
       var ok4 = ripTest === "9c1185a5c5e9fc54612808977ee8f548b2258d31";
-      console.log("[selftest] G compressed address:", addr, ok1 ? "OK" : "FAIL");
-      console.log("[selftest] WIF(1, compressed):", wif, ok2 ? "OK" : "FAIL");
+      var addrP2WPKH = pubkeyToP2WPKH(gCompressed);
+      var ok5 = addrP2WPKH === "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
+      console.log("[selftest] P2PKH(G):", addrP2PKH, ok1 ? "OK" : "FAIL");
+      console.log("[selftest] P2WPKH(G):", addrP2WPKH, ok5 ? "OK" : "FAIL");
+      console.log("[selftest] WIF(1):", wif, ok2 ? "OK" : "FAIL");
       console.log("[selftest] SHA-256(''):", shaTest, ok3 ? "OK" : "FAIL");
       console.log("[selftest] RIPEMD-160(''):", ripTest, ok4 ? "OK" : "FAIL");
     } catch (e) { console.log("[selftest] error", e); }
@@ -402,8 +615,21 @@
   var resultEl = document.getElementById("result");
   var statusEl = document.getElementById("status");
   var labelEl  = document.getElementById("result-label");
-  var addrEl   = document.getElementById("address-out");
-  var wifEl    = document.getElementById("wif-out");
+
+  var addrP2PKHEl = document.getElementById("address-out");
+  var addrP2SHEl  = document.getElementById("addr-p2sh");
+  var addrP2WPKHEl= document.getElementById("addr-p2wpkh");
+  var addrP2TREl  = document.getElementById("addr-p2tr");
+  var wifEl       = document.getElementById("wif-out");
+
+  var chipP2PKH  = document.getElementById("chip-p2pkh");
+  var chipP2SH   = document.getElementById("chip-p2sh");
+  var chipP2WPKH = document.getElementById("chip-p2wpkh");
+  var chipP2TR   = document.getElementById("chip-p2tr");
+  var balP2PKHEl = document.getElementById("balance-p2pkh");
+  var balP2SHEl  = document.getElementById("balance-p2sh");
+  var balP2WPKHEl= document.getElementById("balance-p2wpkh");
+  var balP2TREl  = document.getElementById("balance-p2tr");
 
   var btnAdd = document.getElementById("btn-add");
   var btnSub = document.getElementById("btn-sub");
@@ -411,12 +637,33 @@
   var btnDiv = document.getElementById("btn-div");
   var allBtns = [btnAdd, btnSub, btnMul, btnDiv];
 
+  var balanceRequestId = 0;
+
   function setStatus(msg, isError) {
     statusEl.textContent = msg;
     statusEl.classList.toggle("error", !!isError);
   }
-  function setAddr(v) { addrEl.textContent = v || "—"; addrEl.classList.toggle("empty", !v); }
-  function setWif(v) { wifEl.textContent = v || "—"; wifEl.classList.toggle("empty", !v); }
+  function setAddrEl(el, v) { el.textContent = v || "—"; el.classList.toggle("empty", !v); }
+
+  function setChip(chip, valEl, v) {
+    chip.classList.remove("positive");
+    if (v === null || v === undefined) {
+      valEl.textContent = "—";
+    } else if (v === "error") {
+      valEl.textContent = "ошибка";
+    } else {
+      valEl.textContent = v + " BTC";
+      if (v > 0) chip.classList.add("positive");
+    }
+  }
+
+  function clearAll() {
+    setAddrEl(addrP2PKHEl, ""); setAddrEl(addrP2SHEl, ""); setAddrEl(addrP2WPKHEl, ""); setAddrEl(addrP2TREl, ""); setAddrEl(wifEl, "");
+    setChip(chipP2PKH, balP2PKHEl, null);
+    setChip(chipP2SH, balP2SHEl, null);
+    setChip(chipP2WPKH, balP2WPKHEl, null);
+    setChip(chipP2TR, balP2TREl, null);
+  }
 
   function highlight() {
     for (var i = 0; i < allBtns.length; i++) allBtns[i].classList.remove("active");
@@ -432,7 +679,7 @@
       if (!rawP) {
         resultEl.className = "result";
         resultEl.textContent = "—";
-        setAddr(""); setWif("");
+        clearAll();
         setStatus("Введите публичный ключ P", false);
         return;
       }
@@ -444,7 +691,7 @@
       if (!rawO) {
         resultEl.className = "result";
         resultEl.textContent = "—";
-        setAddr(""); setWif("");
+        clearAll();
         setStatus("Введите число k", false);
         return;
       }
@@ -487,7 +734,7 @@
       if (resPt[0] === 0n && resPt[1] === 0n) {
         resultEl.className = "result inf";
         resultEl.textContent = desc + "\nРезультат: ∞";
-        setAddr(""); setWif("");
+        clearAll();
         setStatus("Точка на бесконечности", false);
         return;
       }
@@ -497,20 +744,53 @@
       resultEl.textContent = desc + "\n\n" + outHex;
 
       var outPubBytes = hexToBytes(outHex);
-      setAddr(pubkeyToAddress(outPubBytes));
+
+      var addrP2PKH = pubkeyToP2PKH(outPubBytes);
+      var addrP2SH  = pubkeyToP2SHP2WPKH(outPubBytes);
+      var addrP2WPKH = pubkeyToP2WPKH(outPubBytes);
+      var addrP2TR  = pubkeyToP2TR(outPubBytes);
+
+      setAddrEl(addrP2PKHEl, addrP2PKH);
+      setAddrEl(addrP2SHEl, addrP2SH);
+      setAddrEl(addrP2WPKHEl, addrP2WPKH);
+      setAddrEl(addrP2TREl, addrP2TR);
 
       if (resultPriv !== null && resultPriv > 0n && resultPriv < N) {
-        setWif(privToWif(resultPriv, compressed));
+        setAddrEl(wifEl, privToWif(resultPriv, compressed));
       } else {
-        setWif("");
+        setAddrEl(wifEl, "");
       }
 
-      setStatus("Готово · формат: " + (compressed ? "сжатый" : "несжатый") +
-                " · адрес из " + outPubBytes.length + " байт", false);
+      setStatus("Готово · формат: " + (compressed ? "сжатый" : "несжатый") + " · адреса P2PKH, P2SH-P2WPKH, P2WPKH, P2TR", false);
+
+      var reqId = ++balanceRequestId;
+      setChip(chipP2PKH, balP2PKHEl, null);
+      setChip(chipP2SH, balP2SHEl, null);
+      setChip(chipP2WPKH, balP2WPKHEl, null);
+      setChip(chipP2TR, balP2TREl, null);
+
+      var addresses = [
+        { chip: chipP2PKH, el: balP2PKHEl, addr: addrP2PKH },
+        { chip: chipP2SH, el: balP2SHEl, addr: addrP2SH },
+        { chip: chipP2WPKH, el: balP2WPKHEl, addr: addrP2WPKH },
+        { chip: chipP2TR, el: balP2TREl, addr: addrP2TR }
+      ];
+
+      addresses.forEach(function (item) {
+        checkBalance(item.addr).then(function (bal) {
+          if (reqId !== balanceRequestId) return;
+          if (bal === null) {
+            setChip(item.chip, item.el, "error");
+          } else {
+            setChip(item.chip, item.el, bal);
+          }
+        });
+      });
+
     } catch (e) {
       resultEl.className = "result error";
       resultEl.textContent = "Ошибка: " + e.message;
-      setAddr(""); setWif("");
+      clearAll();
       setStatus("Ошибка: " + e.message, true);
     }
   }
@@ -533,7 +813,7 @@
   }
 
   if (!inputP.value) {
-    inputP.value = "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798";
+    inputP.value = "031f6a332d3c5c4f2de2378c012f429cd109ba07d69690c6c701b6bb87860d6640";
   }
   highlight();
   inputP.addEventListener("input", recalc);
