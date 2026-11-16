@@ -31,7 +31,6 @@
   .extra .v { font-family: monospace; font-size: 13px; font-weight: 500; color: #0f172a; word-break: break-all; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; flex: 1 1 400px; }
   .extra .v.empty { color: #94a3b8; font-weight: 400; }
 
-  /* Компактный горизонтальный блок балансов */
   .balance-strip {
     margin-top: 16px;
     display: flex;
@@ -108,7 +107,6 @@
     <input type="text" id="privkey-input" placeholder="Приватный ключ P (hex, опционально — для WIF при + / −)" />
   </div>
 
-  <!-- Компактный горизонтальный блок балансов -->
   <div class="balance-strip">
     <div class="balance-chip" id="chip-p2pkh">
       <span class="lbl">P2PKH</span>
@@ -140,6 +138,10 @@
       <div class="v empty" id="address-out">—</div>
     </div>
     <div class="row">
+      <div class="k">P2PKH (несжат.)</div>
+      <div class="v empty" id="addr-p2pkh-uncomp">—</div>
+    </div>
+    <div class="row">
       <div class="k">P2SH-P2WPKH</div>
       <div class="v empty" id="addr-p2sh">—</div>
     </div>
@@ -158,7 +160,7 @@
   </div>
 
   <div id="status" class="status"></div>
-  <div class="note">WIF для операций «+ / −» требует приватный ключ P. Для «× / ÷» WIF вычисляется из k без него. Баланс запрашивается для P2PKH, P2SH-P2WPKH, P2WPKH и P2TR.</div>
+  <div class="note">WIF для операций «+ / −» требует приватный ключ P. Для «× / ÷» WIF вычисляется из k без него. Баланс запрашивается для P2PKH, P2SH-P2WPKH, P2WPKH и P2TR. Несжатый P2PKH-адрес генерируется всегда (из несжатой формы точки).</div>
 </div>
 
 <script>
@@ -445,7 +447,7 @@
     return base58encode(buf);
   }
 
-  /* ---------- Bech32 / Bech32m (BIP-173 / BIP-350) ---------- */
+  /* ---------- Bech32 / Bech32m ---------- */
   var BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
   var BECH32_CONST = 1;
   var BECH32M_CONST = 0x2bc830a3;
@@ -567,22 +569,26 @@
     return base58check(payload);
   }
 
-  /* ---------- Balance check (Blockchain.com API) ---------- */
-  async function checkBalance(address) {
-    if (!address) return null;
-    var url = "https://blockchain.info/balance?active=" + encodeURIComponent(address) + "&cors=true";
-    try {
-      var response = await fetch(url);
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      var data = await response.json();
-      var info = data[address];
-      if (!info) return 0;
-      return info.final_balance / 100000000;
-    } catch (e) {
-      console.warn("Не удалось получить баланс для " + address + ":", e.message);
-      return null;
+  /* ---------- Balance check ---------- */
+async function checkBalance(address) {
+  if (!address) return null;
+  var url = "https://explorer.apirone.com/api/address/" + encodeURIComponent(address);
+  try {
+    var response = await fetch(url);
+    if (!response.ok) {
+      if (response.status === 404) return 0; // адрес не активирован
+      throw new Error("HTTP " + response.status);
     }
+    var data = await response.json();
+    var stats = data.chain_stats;
+    if (!stats) return 0;
+    var balanceSats = (stats.funded_txo_sum || 0) - (stats.spent_txo_sum || 0);
+    return balanceSats / 100000000; // конвертация в BTC
+  } catch (e) {
+    console.warn("Не удалось получить баланс " + address + ":", e.message);
+    return null;
   }
+}
 
   /* ---------- self-test ---------- */
   (function selfTest() {
@@ -598,11 +604,15 @@
       var ok4 = ripTest === "9c1185a5c5e9fc54612808977ee8f548b2258d31";
       var addrP2WPKH = pubkeyToP2WPKH(gCompressed);
       var ok5 = addrP2WPKH === "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
+      var gUncompressed = hexToBytes("0479BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8");
+      var addrP2PKHUncomp = pubkeyToP2PKH(gUncompressed);
+      var ok6 = addrP2PKHUncomp === "1EHNa6Q4Jz2uvNExL497mE43ikXhwF6kZm";
       console.log("[selftest] P2PKH(G):", addrP2PKH, ok1 ? "OK" : "FAIL");
       console.log("[selftest] P2WPKH(G):", addrP2WPKH, ok5 ? "OK" : "FAIL");
       console.log("[selftest] WIF(1):", wif, ok2 ? "OK" : "FAIL");
       console.log("[selftest] SHA-256(''):", shaTest, ok3 ? "OK" : "FAIL");
       console.log("[selftest] RIPEMD-160(''):", ripTest, ok4 ? "OK" : "FAIL");
+      console.log("[selftest] P2PKH uncompressed(G):", addrP2PKHUncomp, ok6 ? "OK" : "FAIL");
     } catch (e) { console.log("[selftest] error", e); }
   })();
 
@@ -617,6 +627,7 @@
   var labelEl  = document.getElementById("result-label");
 
   var addrP2PKHEl = document.getElementById("address-out");
+  var addrP2PKHUncompEl = document.getElementById("addr-p2pkh-uncomp");
   var addrP2SHEl  = document.getElementById("addr-p2sh");
   var addrP2WPKHEl= document.getElementById("addr-p2wpkh");
   var addrP2TREl  = document.getElementById("addr-p2tr");
@@ -658,7 +669,7 @@
   }
 
   function clearAll() {
-    setAddrEl(addrP2PKHEl, ""); setAddrEl(addrP2SHEl, ""); setAddrEl(addrP2WPKHEl, ""); setAddrEl(addrP2TREl, ""); setAddrEl(wifEl, "");
+    setAddrEl(addrP2PKHEl, ""); setAddrEl(addrP2PKHUncompEl, ""); setAddrEl(addrP2SHEl, ""); setAddrEl(addrP2WPKHEl, ""); setAddrEl(addrP2TREl, ""); setAddrEl(wifEl, "");
     setChip(chipP2PKH, balP2PKHEl, null);
     setChip(chipP2SH, balP2SHEl, null);
     setChip(chipP2WPKH, balP2WPKHEl, null);
@@ -745,12 +756,18 @@
 
       var outPubBytes = hexToBytes(outHex);
 
+      // Всегда генерируем несжатую форму публичного ключа для несжатого P2PKH
+      var outUncompressed = encodePoint(resPt, false);
+      var uncompressedBytes = hexToBytes(outUncompressed);
+
       var addrP2PKH = pubkeyToP2PKH(outPubBytes);
+      var addrP2PKHUncomp = pubkeyToP2PKH(uncompressedBytes);
       var addrP2SH  = pubkeyToP2SHP2WPKH(outPubBytes);
       var addrP2WPKH = pubkeyToP2WPKH(outPubBytes);
       var addrP2TR  = pubkeyToP2TR(outPubBytes);
 
       setAddrEl(addrP2PKHEl, addrP2PKH);
+      setAddrEl(addrP2PKHUncompEl, addrP2PKHUncomp);
       setAddrEl(addrP2SHEl, addrP2SH);
       setAddrEl(addrP2WPKHEl, addrP2WPKH);
       setAddrEl(addrP2TREl, addrP2TR);
@@ -761,7 +778,7 @@
         setAddrEl(wifEl, "");
       }
 
-      setStatus("Готово · формат: " + (compressed ? "сжатый" : "несжатый") + " · адреса P2PKH, P2SH-P2WPKH, P2WPKH, P2TR", false);
+      setStatus("Готово · формат: " + (compressed ? "сжатый" : "несжатый") + " · адреса P2PKH, P2PKH(несжат.), P2SH-P2WPKH, P2WPKH, P2TR", false);
 
       var reqId = ++balanceRequestId;
       setChip(chipP2PKH, balP2PKHEl, null);
